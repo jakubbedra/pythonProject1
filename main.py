@@ -130,18 +130,15 @@ class NeuralNet(object):
 
         # output layer
         dL = 1
-        dy_hat = (-Y * 1 / y_hat + (1 - Y) * 1 / (1 - y_hat)) * dL
-        dz = (y_hat * (1 - y_hat)) * dy_hat
-        db = (1 / m_ex) * np.sum(dz)
-        dw = (1 / m_ex) * np.dot(X, dz.T)
+        dy_hat = (-y * 1 / y_hat + (1 - y) * 1 / (1 - y_hat)) * dL
+        dz2 = (y_hat * (1 - y_hat)) * dy_hat
+        db2 = (1 / nbatch) * np.sum(dz2)
+        dW2 = (1 / nbatch) * np.dot(X.T, dz2)
 
-        dz2 = (-y * 1 / y_hat + (1 - y) * 1 / (1 - y_hat)) * 1
-        db2 = np.sum(dz2, axis=0) / nbatch
-        dW2 = np.dot(a1.T, dz2) / nbatch
-        da1 = np.dot(dz2, W2.T)
+        da1 = np.dot(dz2, dW2.T)
         dz1 = da1 * (z1 > 0)
-        db1 = np.sum(dz1, axis=0) / nbatch
-        dW1 = np.dot(X.T, dz1) / nbatch
+        db1 = (1 / nbatch) * np.sum(dz1)
+        dW1 = (1 / nbatch) * np.dot(X.T, dz2)#np.dot(X.T, dz1) / nbatch
 
 
 
