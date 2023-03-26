@@ -65,14 +65,10 @@ class NeuralNet(object):
         """
         # YOUR CODE HERE
         # Fix definition of weight matrices and biases, use np.random.uniform function
-        W1 = np.random.uniform(-0.01, 0.01, (input_size, hidden_layer_size))
-        b1 = np.zeros(hidden_layer_size)
-        W2 = np.random.uniform(-0.01, 0.01, (hidden_layer_size, output_layer_size))
-        b2 = np.zeros(output_layer_size)
-        #W1 = np.random.randn(input_size, hidden_layer_size) / np.sqrt(input_size)
-        #b1 = np.zeros(hidden_layer_size)
-        #W2 = np.random.randn(hidden_layer_size, output_layer_size) / np.sqrt(hidden_layer_size)
-        #b2 = np.zeros(output_layer_size)
+        W1 = np.random.uniform(-0.1, 0.1, (input_size, hidden_layer_size))
+        b1 = np.random.uniform(-0.1, 0.1, (1, hidden_layer_size))
+        W2 = np.random.uniform(-0.1, 0.1, (hidden_layer_size, output_layer_size))
+        b2 = np.random.uniform(-0.1, 0.1, (1, output_layer_size))
         # END OF YOUR CODE
         self.params = {'W1': W1,
                        'b1': b1,
@@ -99,7 +95,7 @@ class NeuralNet(object):
         predictions = 1 / (1 + np.exp(-z2))
 
         # END OF YOUR CODE
-        return np.squeeze(predictions)
+        return np.round(predictions)
 
     def propagate(self, X, y):
         y = y.reshape(-1, 1)  # fix y vector to have shape [batch,1]
@@ -108,69 +104,28 @@ class NeuralNet(object):
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
 
-        # YOUR CODE HERE
-        # forward pass - you should at least calculate cost function (average loss for all examples in a batch)
-
-        # hidden layer
+        # forward pass
         z1 = np.dot(X, W1) + b1
-        a1 = np.maximum(0, z1)
-
-        # output layer
+        a1 = np.maximum(0, z1)  # ReLU
         z2 = np.dot(a1, W2) + b2
-        y_hat = 1 / (1 + np.exp(-z2))
+        y_hat = 1 / (1 + np.exp(-z2))  # sigmoid
+        loss = -(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat)).sum(axis=0) / nbatch  # cross-entropy loss
 
-        # cost function
-        loss = -(y * np.log(y_hat) + (1 - y) * (np.log(1 - y_hat)))
-        cost = (1 / nbatch) * np.sum(loss)
-        cost = np.squeeze(cost)
-        # END OF YOUR CODE
-
-        # YOUR CODE HERE
-        # backward pass - get values of dW1, dW2,db1,db2
-
-        # output layer
-        dL = 1
-        dy_hat = (-y * 1 / y_hat + (1 - y) * 1 / (1 - y_hat)) * dL
-        dz2 = (y_hat * (1 - y_hat)) * dy_hat
-        db2 = (1 / nbatch) * np.sum(dz2)
-        dW2 = (1 / nbatch) * np.dot(X.T, dz2)
-
-        da1 = np.dot(dz2, dW2.T)
-        dz1 = da1 * (z1 > 0)
-        db1 = (1 / nbatch) * np.sum(dz1)
-        dW1 = (1 / nbatch) * np.dot(X.T, dz2)#np.dot(X.T, dz1) / nbatch
-
-
-
-        # sigmoid derivative
-       #dy_hat = (-y * 1 / y_hat + (1 - y) * 1 / (1 - y_hat)) * 1
-       #dz2 = (y_hat * (1 - y_hat)) * dy_hat
-       #db2 = (1 / m) * np.sum(dz2)
-       #dW2 = (1 / m) * np.dot(dz2, dz2.T) # todo
-
-       ## 0 if <= 0, else 1
-       ## ReLU derivative
-       #da1 = np.dot(dz2, W2.T)
-       #dz1 = da1 * (z1 > 0)
-       #db1 = (1 / m) * np.sum(dz1)
-       #dW1 = (1 / m) * np.dot(X.T, dz1)
-
-
-
-
-
-        #dW1 = None
-        #dW2 = None
-        #db1 = None
-        #db2 = None
-        # END OF YOUR CODE
+        # backward pass
+        dz2 = y_hat - y
+        dW2 = (1 / nbatch) * np.dot(a1.T, dz2)
+        db2 = (1 / nbatch) * np.sum(dz2, axis=0, keepdims=True)
+        da1 = np.dot(dz2, W2.T)
+        dz1 = da1 * (z1 > 0)  # relu derivative for first layer
+        dW1 = (1 / nbatch) * np.dot(X.T, dz1)
+        db1 = (1 / nbatch) * np.sum(dz1, axis=0, keepdims=True)
 
         self.grads = {'dW1': dW1,
                       'db1': db1,
                       'dW2': dW2,
                       'db2': db2}
 
-        return cost
+        return loss
 
     def update(self, alpha):
         # YOUR CODE HERE
@@ -199,7 +154,7 @@ class NeuralNet(object):
 
 alpha = 0.01
 net = NeuralNet(x_train.shape[1], 20, 1)
-for i in range(1000):
+for i in range(10000):
     loss = net.propagate(x_train, y_train)
     net.update(alpha)
     if i % 100 == 0:
@@ -207,4 +162,4 @@ for i in range(1000):
         y_pred_test = net.predict(x_test)
         print(loss)
         print("train accuracy: {} %".format(100 - np.mean(np.abs(y_pred_train - y_train)) * 100))
-        print("test accuracy: {} %".format(100 - np.mean(np.abs(y_pred_test - y_train)) * 100))
+        print("test accuracy: {} %".format(100 - np.mean(np.abs(y_pred_test - y_test)) * 100))
